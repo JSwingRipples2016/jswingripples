@@ -62,7 +62,12 @@ public class JRipplesModuleICDefaultConceptLocation implements JRipplesICModuleI
 
     @Override
     public void InitializeStage(JRipplesModuleRunner moduleRunner) {
-        final JSwingRipplesEIGNode[] nodes = eig.getAllNodes();
+        JSwingRipplesEIGNode[] nodes = null;
+        do {
+               nodes = eig.getAllNodes();
+        } while (nodes == null);
+
+        
         if (nodes != null) {
             for (int i = 0; i < nodes.length; i++) {
                 nodes[i].setMark(EIGStatusMarks.BLANK);
@@ -79,7 +84,12 @@ public class JRipplesModuleICDefaultConceptLocation implements JRipplesICModuleI
         moduleRunner.moduleFinished();
         eig.getHistory().clear();
     }
-
+/*    @Override
+    public void InitializeStage(JRipplesModuleRunner moduleRunner) {
+        if(!eig.isInitialized()){
+        }
+            
+    }*/
 
 	/*
 	 * (non-Javadoc)
@@ -124,8 +134,11 @@ public class JRipplesModuleICDefaultConceptLocation implements JRipplesICModuleI
     private JSwingRipplesEIGNode getType(final JSwingRipplesEIGNode[] nodes) {
         for (int i = 0; i < nodes.length; i++) {
             final IMember member = nodes[i].getNodeIMember();
-            if (member instanceof IType && ((IType) member).getFullyQualifiedName().equals(
-                    eig.getMainClass())) {
+            //Searching for the class main class (full name, with package name)
+            //Example: if the main class of the project Dynamic is called DynamicScope and it belongs
+            //to dynamicscope package, the main class should be called dynamicscope.DynamicScope
+            if (member instanceof IType && ((IType) member).getElementName().equals(
+                    eig.getMainClass().replaceFirst("[.][^.]+$", ""))) {
                 return nodes[i];
             }
         }

@@ -24,7 +24,7 @@ import org.incha.ui.JSwingRipplesApplication;
 import org.incha.ui.TaskProgressMonitor;
 import org.incha.ui.util.SubProgressMonitor;
 
-class Analyzer extends InteractiveTask {
+public class Analyzer extends InteractiveTask {
     private static final Log log = LogFactory.getLog(Analyzer.class);
 
     private boolean accountForPolymorphism=false;
