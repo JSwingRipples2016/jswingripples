@@ -7,6 +7,7 @@ import java.awt.GridLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
@@ -28,6 +29,8 @@ import org.incha.core.JavaProjectsModel;
 import org.incha.core.ModuleConfiguration;
 import org.incha.core.Statistics;
 import org.incha.ui.jripples.JRipplesDefaultModulesConstants;
+import org.incha.utils.FileVisitor;
+import org.incha.utils.IoUtils;
 
 
 public class StartAnalysisDialog extends JDialog {
@@ -39,7 +42,7 @@ public class StartAnalysisDialog extends JDialog {
     final JButton ok = new JButton("Ok"); 
     
     private JavaProject project;
-    
+    final Window ownerApp; 
     final JComboBox<String> incrementalChange = new JComboBox<String>(new DefaultComboBoxModel<String>(
         new String[]{
             JRipplesDefaultModulesConstants.MODULE_IMPACT_ANALYSIS_TITLE,
@@ -67,6 +70,7 @@ public class StartAnalysisDialog extends JDialog {
      */
     public StartAnalysisDialog(final Window owner, final StartAnalysisAction callback) {
         super(owner);
+        ownerApp = owner;
         startAnalysisCallback = callback;
         setModal(true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -234,22 +238,15 @@ public class StartAnalysisDialog extends JDialog {
             }
         });
         
-        JButton btnsearch = new JButton("Browse");
+        JButton btnsearch = new JButton("Search");
         btnsearch.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(final ActionEvent e) {
-               
-                final JFileChooser chooser = new JFileChooser(project.getBuildPath().getFirstPath());
-                //chooser.addChoosableFileFilter(jpegFilter);
-                chooser.setMultiSelectionEnabled(false);
-
-                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-                    final File selectedFile = chooser.getSelectedFile();
-                    if (selectedFile != null) {
-                        mainClassFile = selectedFile;
-                        className.setText(selectedFile.getName());
-                    }
-                }
+                final MainClassSearchDialog dialog = new MainClassSearchDialog(StartAnalysisDialog.this, project);
+                dialog.pack();
+                dialog.setLocationRelativeTo(ownerApp);
+                dialog.setTitle("Select the enter point");
+                dialog.setVisible(true);
             }
         });
         panelclassname.add(btnsearch);
@@ -293,5 +290,26 @@ public class StartAnalysisDialog extends JDialog {
      */
     public File getMainClass() {
         return mainClassFile;
+    }
+    
+    protected void setClassName(final String classNameParam) throws IOException{
+        final String localfilename = classNameParam.replace(".", File.separator ) + ".java";
+        final List<File> sources = project.getBuildPath().getSources();
+        for (final File file : sources) {
+            IoUtils.visitTo(file, new FileVisitor() {
+                @Override
+                public void exit(final File t) throws IOException {
+                }
+                @Override
+                public boolean enter(final File t) throws IOException {
+                    if (t.isFile() && t.getPath().indexOf(localfilename)!=-1) {
+                        mainClassFile = t;
+                        className.setText(classNameParam);
+                    }
+                    return true;
+                }
+            });
+        }
+        ok.setEnabled(true);
     }
 }
