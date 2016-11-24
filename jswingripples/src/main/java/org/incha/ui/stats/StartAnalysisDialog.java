@@ -292,24 +292,9 @@ public class StartAnalysisDialog extends JDialog {
         return mainClassFile;
     }
     
-    protected void setClassName(final String classNameParam) throws IOException{
-        final String localfilename = classNameParam.replace(".", File.separator ) + ".java";
-        final List<File> sources = project.getBuildPath().getSources();
-        for (final File file : sources) {
-            IoUtils.visitTo(file, new FileVisitor() {
-                @Override
-                public void exit(final File t) throws IOException {
-                }
-                @Override
-                public boolean enter(final File t) throws IOException {
-                    if (t.isFile() && t.getPath().indexOf(localfilename)!=-1) {
-                        mainClassFile = t;
-                        className.setText(classNameParam);
-                    }
-                    return true;
-                }
-            });
-        }
+    protected void setClassName(final String classNameParam, String fileName) throws IOException{
+        mainClassFile = new File(fileName);
+        className.setText(classNameParam);
         ok.setEnabled(true);
     }
 }
