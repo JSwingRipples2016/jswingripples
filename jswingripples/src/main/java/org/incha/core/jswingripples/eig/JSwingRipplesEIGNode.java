@@ -97,6 +97,14 @@ public  class JSwingRipplesEIGNode {
 		return "";
 	}
 
+	public String getAbsolutePath() {
+		String absPath = null;
+		if(nodeMember == null) return "";
+		if(nodeMember.getCompilationUnit() != null) absPath = nodeMember.getCompilationUnit().getPath().toString();
+		if(absPath != null) return absPath;
+		return "";
+	}
+
 	/**
 	 * associates EIG mark with the node. Typically, EIG marks are used to
 	 * denote the status of the node's underlying member during Incremental
