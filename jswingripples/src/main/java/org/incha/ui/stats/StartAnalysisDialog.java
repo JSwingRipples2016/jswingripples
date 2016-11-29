@@ -237,6 +237,23 @@ public class StartAnalysisDialog extends JDialog {
             }
         });
         
+        JButton btnbrowse = new JButton("Browse");
+        btnbrowse.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(final ActionEvent e) {
+                final JFileChooser chooser = new JFileChooser(project.getBuildPath().getFirstPath());
+                chooser.setMultiSelectionEnabled(false);
+                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                    final File selectedFile = chooser.getSelectedFile();
+                    if (selectedFile != null) {
+                        mainClassFile = selectedFile;
+                        className.setText(selectedFile.getName());
+                    }
+                }
+            }
+        });
+        panelclassname.add(btnbrowse);
+        
         JButton btnsearch = new JButton("Search");
         btnsearch.addActionListener(new ActionListener() {
             @Override
@@ -294,6 +311,9 @@ public class StartAnalysisDialog extends JDialog {
     protected void setClassName(final String classNameParam, String fileName) throws IOException{
         mainClassFile = new File(fileName);
         className.setText(classNameParam);
+    }
+    
+    protected void enableButtonOk(){
         ok.setEnabled(true);
     }
 }

@@ -26,35 +26,28 @@ import javax.swing.AbstractListModel;
 import org.eclipse.jdt.core.IPackageDeclaration;
 
 public class MainClassSearchDialog extends JDialog {
-    JList list = null;
+    private JList list = new JList();
     private StartAnalysisDialog startAnalysisDialogCallback;
-    JButton ok = new JButton();
-    HashMap<String, String> hmap = new HashMap<String, String>();
+    private JButton ok = new JButton();
+    private HashMap<String, String> hmap = new HashMap<String, String>();
+    private ArrayList<String> arr = new ArrayList<String>();
+    
     @Override
     public void setTitle(String title) {
-        super.setTitle(title); 
-        ok.setEnabled(false);
+        super.setTitle(title);
     }
-
-    /**
-     * Default constructor.
-     */
-    public MainClassSearchDialog(final StartAnalysisDialog callback, JavaProject project){
-
-        startAnalysisDialogCallback = callback;
-        setModal(true);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        
-        //-----------------------
-        final ArrayList<String> arr = new ArrayList<String>();
+    
+    
+    public void FindMainClasses(JavaProject project){        
         String pattern = "void\\s*main\\s*\\(";
         Pattern r = Pattern.compile(pattern);
         try {
             JSwingRipplesEIG eig = new JSwingRipplesEIG(project);
             final ICompilationUnit[] units = JavaDomUtils.getCompilationUnitsWithoutMonitor(eig.getJavaProject());
             
-            for (int i =0 ; i<units.length; i++){
-                ICompilationUnit u = units[i];
+            //for (int i =0 ; i<units.length; i++){
+            for (ICompilationUnit u : units) {
+                //ICompilationUnit u = units[i];
                 IPackageDeclaration[] P = u.getPackageDeclarations();
                 IType[] T = u.getAllTypes();
                 for (int j=0; j<P.length; j++){                    
@@ -74,17 +67,10 @@ public class MainClassSearchDialog extends JDialog {
             Logger.getLogger(StartAnalysisDialog.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        
-        
-        
-        
-        
-        //-----------------------
-        JScrollPane jScrollPane1 = new JScrollPane();
-        list = new JList();
-        
-        JButton cancel = new JButton();
-        
+    }
+    
+    
+    public void configureList(){
         list.setModel(new AbstractListModel() {
             Object[] strings = arr.toArray();
             public int getSize() { return strings.length; }
@@ -98,22 +84,36 @@ public class MainClassSearchDialog extends JDialog {
                 } 
                 if (evt.getClickCount() == 2) {
                     try {
-                        // Double-click detected
-                        okActionPerformed(null);
+                        okActionPerformed();
                     } catch (IOException ex) {
                         Logger.getLogger(MainClassSearchDialog.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             }
         });
+    }
+
+    public MainClassSearchDialog(final StartAnalysisDialog callback, JavaProject project){
+        ok.setEnabled(false);
+        startAnalysisDialogCallback = callback;
+        setModal(true);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         
+        FindMainClasses(project);
+        
+        JScrollPane jScrollPane1 = new JScrollPane();
+        
+        JButton cancel = new JButton();
+        
+        
+        configureList();
         jScrollPane1.setViewportView(list);
         
         ok.setText("Ok");
         ok.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 try {
-                    okActionPerformed(evt);
+                    okActionPerformed();
                 } catch (IOException ex) {
                     Logger.getLogger(MainClassSearchDialog.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -124,7 +124,7 @@ public class MainClassSearchDialog extends JDialog {
         cancel.setToolTipText("");
         cancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cancelActionPerformed(evt);
+                cancelActionPerformed();
             }
         });
         
@@ -160,16 +160,17 @@ public class MainClassSearchDialog extends JDialog {
         
     }
     
-    private void okActionPerformed(ActionEvent evt) throws IOException {                                   
+    private void okActionPerformed() throws IOException {                                   
         dispose();
         int index = list.getSelectedIndex();
         if (index!= -1){
             String selectedItem = list.getSelectedValue().toString();
             startAnalysisDialogCallback.setClassName(selectedItem,hmap.get(selectedItem));
+            startAnalysisDialogCallback.enableButtonOk();
         }
     }                                  
 
-    private void cancelActionPerformed(ActionEvent evt) {                                       
+    private void cancelActionPerformed() {                                       
         dispose();
     }        
 

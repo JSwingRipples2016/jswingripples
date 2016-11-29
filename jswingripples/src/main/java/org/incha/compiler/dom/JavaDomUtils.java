@@ -302,24 +302,21 @@ public final class JavaDomUtils {
 
         final List<ICompilationUnit> units = new LinkedList<ICompilationUnit>();
 
-        try {
-            final List<File> sources = project.getBuildPath().getSources();
-            for (final File file : sources) {
-                IoUtils.visitTo(file, new FileVisitor() {
-                    @Override
-                    public void exit(final File t) throws IOException {
+        
+        final List<File> sources = project.getBuildPath().getSources();
+        for (final File file : sources) {
+            IoUtils.visitTo(file, new FileVisitor() {
+                @Override
+                public void exit(final File t) throws IOException {
+                }
+                @Override
+                public boolean enter(final File t) throws IOException {
+                    if (t.isFile() && t.getName().endsWith(".java")) {
+                        units.add(builder.build(t, null));
                     }
-                    @Override
-                    public boolean enter(final File t) throws IOException {
-                        if (t.isFile() && t.getName().endsWith(".java")) {
-                            units.add(builder.build(t, null));
-                        }
-                        return true;
-                    }
-                });
-            }
-        } finally {
-            //
+                    return true;
+                }
+            });
         }
 
         return units.toArray(new ICompilationUnit[units.size()]);
