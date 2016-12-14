@@ -1,90 +1,82 @@
 package org.incha.ui.stats;
 
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import javax.swing.JButton;
-import javax.swing.JDialog;
+import javax.swing.*;
+
 import org.incha.core.JavaProject;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JList;
-import javax.swing.JScrollPane;
+
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaModelException;
 import org.incha.compiler.dom.JavaDomUtils;
-import org.incha.core.jswingripples.eig.JSwingRipplesEIG;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.swing.AbstractListModel;
+
 import org.eclipse.jdt.core.IPackageDeclaration;
+import org.incha.ui.util.NullMonitor;
 
 public class MainClassSearchDialog extends JDialog {
-    private JList list = new JList();
     private StartAnalysisDialog startAnalysisDialogCallback;
-    private JButton ok = new JButton();
-    private Map<String, String> hmap = new HashMap<String, String>();
-    
-    @Override
-    public void setTitle(String title) {
-        super.setTitle(title);
+    private JList mainClassesListAdapter = new JList();
+    private JButton okButton = new JButton();
+    private JButton cancelButton = new JButton();
+    private JScrollPane mainScrollPane = new JScrollPane();
+
+    public MainClassSearchDialog(final StartAnalysisDialog callback, JavaProject project) throws IOException{
+        startAnalysisDialogCallback = callback;
+        setModal(true);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+
+        final Map<String, String> mainClassToFileName = findMainClasses(project);
+        configureList(mainClassToFileName);
+        configureOkButton(mainClassToFileName);
+        configureCancelButton();
+        configureLayout();
+        mainScrollPane.setViewportView(mainClassesListAdapter);
     }
     
-    private void FindMainClasses(JavaProject project) throws IOException{        
-        String pattern = "void\\s*main\\s*\\(";
-        Pattern r = Pattern.compile(pattern);
+    private Map<String, String> findMainClasses(JavaProject project) throws IOException {
+        String patternRegex = "void\\s*main\\s*\\(";
+        Pattern pattern = Pattern.compile(patternRegex);
+        Map<String, String> mainClassToFileName = new HashMap<>();
         try {
-            JSwingRipplesEIG eig = new JSwingRipplesEIG(project);
-            final ICompilationUnit[] units = JavaDomUtils.getCompilationUnitsWithoutMonitor(eig.getJavaProject());
-            
-            for (ICompilationUnit u : units) {
-                IPackageDeclaration[] P = u.getPackageDeclarations();
-                IType[] T = u.getAllTypes();
-                for (int j=0; j<P.length; j++){                    
-                    
-                    Matcher m = r.matcher(T[j].toString());
-                    if (m.find()) {
-                        String fileName = u.getPath().toString().replaceAll("/", Matcher.quoteReplacement(File.separator));
-                        hmap.put(P[j].getElementName()+"."+T[j].getElementName(),fileName);
-                        
+            final ICompilationUnit[] units = JavaDomUtils.getCompilationUnits(project, new NullMonitor());
+            for (ICompilationUnit unit : units) {
+                IPackageDeclaration[] packageDeclarations = unit.getPackageDeclarations();
+                IType[] allTypes = unit.getAllTypes();
+                for (int j = 0; j < packageDeclarations.length; j++){
+                    Matcher matcher = pattern.matcher(allTypes[j].toString());
+                    if (matcher.find()) {
+                        mainClassToFileName.put(
+                                packageDeclarations[j].getElementName() + "." + allTypes[j].getElementName(),
+                                unit.getPath().toString().replaceAll("/", Matcher.quoteReplacement(File.separator)));
                     }
                 }
             }
         } catch (JavaModelException ex) {
             Logger.getLogger(StartAnalysisDialog.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+        return mainClassToFileName;
     }
-    
-    
-    private void configureList() {
-        final Object[] objs = new Object[hmap.size()];
-        int i = 0;
-        for (String key : hmap.keySet()) {
-            objs[i] = (Object)key;
-            i++;
-        }
-        list.setModel(new AbstractListModel() {
-            Object[] strings = objs;
-            public int getSize() { return strings.length; }
-            public Object getElementAt(int i) { return strings[i]; }
-        });
-        
-        list.addMouseListener(new MouseAdapter() {
+
+    private void configureList(final Map<String, String> mainClassToFileName) {
+        mainClassesListAdapter.setModel(
+                new DefaultComboBoxModel(new ArrayList<Object>(mainClassToFileName.keySet()).toArray()));
+        mainClassesListAdapter.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
                 if (evt.getClickCount() == 1) {
-                    ok.setEnabled(true);
+                    okButton.setEnabled(true);
                 } 
-                if (evt.getClickCount() == 2) {
+                if (evt.getClickCount() >= 2) {
                     try {
-                        okActionPerformed();
+                        okActionPerformed(mainClassToFileName);
                     } catch (IOException ex) {
                         Logger.getLogger(MainClassSearchDialog.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -93,86 +85,77 @@ public class MainClassSearchDialog extends JDialog {
         });
     }
 
-    public MainClassSearchDialog(final StartAnalysisDialog callback, JavaProject project) throws IOException{
-        ok.setEnabled(false);
-        startAnalysisDialogCallback = callback;
-        setModal(true);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        
-        FindMainClasses(project);
-        
-        JScrollPane jScrollPane1 = new JScrollPane();
-        
-        JButton cancel = new JButton();
-        
-        
-        configureList();
-        jScrollPane1.setViewportView(list);
-        
-        ok.setText("Ok");
-        ok.addActionListener(new java.awt.event.ActionListener() {
+    private void okActionPerformed(Map<String, String> mainClassToFileName) throws IOException {
+        dispose();
+        if (mainClassesListAdapter.getSelectedIndex() != -1){
+            String selectedItem = mainClassesListAdapter.getSelectedValue().toString();
+            startAnalysisDialogCallback.setClassName(selectedItem, mainClassToFileName.get(selectedItem));
+            startAnalysisDialogCallback.enableOkButton();
+        }
+    }
+
+    private void configureOkButton(final Map<String, String> mainClassToFileName) {
+        okButton.setText("Ok");
+        okButton.setEnabled(false);
+        okButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 try {
-                    okActionPerformed();
+                    okActionPerformed(mainClassToFileName);
                 } catch (IOException ex) {
                     Logger.getLogger(MainClassSearchDialog.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         });
+    }
 
-        cancel.setText("Cancel");
-        cancel.setToolTipText("");
-        cancel.addActionListener(new java.awt.event.ActionListener() {
+    private void configureCancelButton() {
+        cancelButton.setText("Cancel");
+        cancelButton.setToolTipText("");
+        cancelButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cancelActionPerformed();
+                dispose();
             }
         });
-        
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+    }
+
+    private void configureLayout() {
+        GroupLayout layout = new GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1)
-                .addContainerGap())
-            .addGroup(layout.createSequentialGroup()
-                .addGap(88, 88, 88)
-                .addComponent(ok, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(cancel, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(99, Short.MAX_VALUE))
+                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(mainScrollPane)
+                                .addContainerGap())
+                        .addGroup(layout.createSequentialGroup()
+                                .addGap(88, 88, 88)
+                                .addComponent(
+                                        okButton,
+                                        GroupLayout.PREFERRED_SIZE,
+                                        97,
+                                        GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(
+                                        cancelButton,
+                                        GroupLayout.PREFERRED_SIZE,
+                                        98,
+                                        GroupLayout.PREFERRED_SIZE)
+                                .addContainerGap(99, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 245, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(ok)
-                    .addComponent(cancel))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(
+                                        mainScrollPane,
+                                        GroupLayout.PREFERRED_SIZE,
+                                        245,
+                                        GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                        .addComponent(okButton)
+                                        .addComponent(cancelButton))
+                                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-
-        
-        
-        
     }
-    
-    private void okActionPerformed() throws IOException {                                   
-        dispose();
-        int index = list.getSelectedIndex();
-        if (index!= -1){
-            String selectedItem = list.getSelectedValue().toString();
-            startAnalysisDialogCallback.setClassName(selectedItem,hmap.get(selectedItem));
-            startAnalysisDialogCallback.enableButtonOk();
-        }
-    }                                  
-
-    private void cancelActionPerformed() {                                       
-        dispose();
-    }        
-
-
 }
