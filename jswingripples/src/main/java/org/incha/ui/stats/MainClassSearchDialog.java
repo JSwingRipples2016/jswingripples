@@ -90,7 +90,7 @@ public class MainClassSearchDialog extends JDialog {
         if (mainClassesListAdapter.getSelectedIndex() != -1){
             String selectedItem = mainClassesListAdapter.getSelectedValue().toString();
             startAnalysisDialogCallback.setClassName(selectedItem, mainClassToFileName.get(selectedItem));
-            startAnalysisDialogCallback.enableButtonOk();
+            startAnalysisDialogCallback.enableOkButton();
         }
     }
 
