@@ -3,6 +3,7 @@ package org.incha.ui.stats;
 import org.incha.core.*;
 import org.incha.core.jswingripples.eig.JSwingRipplesEIG;
 import org.incha.core.jswingripples.parser.InteractiveTask;
+import org.incha.core.telemetry.utils.Phase;
 import org.incha.ui.JSwingRipplesApplication;
 import org.incha.ui.jripples.JRipplesDefaultModulesConstants;
 
@@ -34,6 +35,11 @@ public class StartAnalysisDialog extends JDialog {
     private JavaProject project;
     final Window ownerWindow;
     final JComboBox<String> projects;
+    private static Phase currentPhase;
+
+    public static Phase getCurrentPhase() {
+        return currentPhase;
+    }
 
     JComboBox<String> dependencyGraph = new JComboBox<String>(new DefaultComboBoxModel<String>(
         new String[]{
@@ -72,6 +78,7 @@ public class StartAnalysisDialog extends JDialog {
 
         //south pane
         startConceptLocationButton.setEnabled(false);
+        classNameTextField.setText("");
         final JPanel south = new JPanel(new FlowLayout(FlowLayout.CENTER));
         startConceptLocationButton.addActionListener(new ActionListener() {
             @Override
@@ -178,23 +185,28 @@ public class StartAnalysisDialog extends JDialog {
 
     private void beginConceptLocation(){
         dispose();
+        currentPhase = Phase.CL; // Starting Concept Location phase.
         JSwingRipplesApplication.getInstance().enableProceedButton(true);
         JSwingRipplesApplication.getInstance().setProceedButtonText("Proceed to Impact Analysis");
+        JSwingRipplesApplication.getLogger().log(currentPhase, "Loading classes...", "N/A");
         startAnalysisCallback.startAnalysis(
             createConceptLocationData(), new StartAnalysisAction.SuccessfulAnalysisAction() {
                 @Override
                 public void execute(ModuleConfiguration config, final JSwingRipplesEIG eig) {
-                JSwingRipplesApplication.getInstance().showProceedButton();
-                StatisticsManager.getInstance().addStatistics(config, eig);
-                JSwingRipplesApplication.getInstance().setProceedButtonListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                    JSwingRipplesApplication.getInstance().enableProceedButton(false);
-                    startAnalysisCallback.startAnalysis(createImpactAnalysisData(eig), createImpactAnalysisCallback());
-                    }
+                    JSwingRipplesApplication.getInstance().showProceedButton();
+                    StatisticsManager.getInstance().addStatistics(config, eig);
+                    JSwingRipplesApplication.getLogger().log(currentPhase, "All classes loaded", "N/A");
+                    JSwingRipplesApplication.getInstance().setProceedButtonListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            currentPhase = Phase.IA;
+                            JSwingRipplesApplication.getInstance().enableProceedButton(false);
+                            JSwingRipplesApplication.getLogger().log(currentPhase, "Starting analysis...", "N/A");
+                            startAnalysisCallback.startAnalysis(createImpactAnalysisData(eig), createImpactAnalysisCallback());
+                        }
                 });
-                }
-            });
+             }
+        });
     }
     
     protected void setClassName(final String classNameParam, String fileName){
@@ -265,6 +277,7 @@ public class StartAnalysisDialog extends JDialog {
                             dialog.setTitle("Select entry point");
                             dialog.setVisible(true);
                             listener.taskSuccessful();
+
                         } catch (IOException ex) {
                             listener.taskFailure();
                         }
@@ -326,6 +339,7 @@ public class StartAnalysisDialog extends JDialog {
             @Override
             public void execute(ModuleConfiguration config, JSwingRipplesEIG eig) {
                 JSwingRipplesApplication.getInstance().enableProceedButton(true);
+                JSwingRipplesApplication.getLogger().log(currentPhase, "Loaded", "N/A");
                 JSwingRipplesApplication.getInstance().hideProceedButton();
                 JSwingRipplesApplication.getInstance().resetProceedButton();
                 JSwingRipplesApplication.getInstance().refreshViewArea();
@@ -338,12 +352,15 @@ public class StartAnalysisDialog extends JDialog {
             @Override
             public void execute(ModuleConfiguration config,final JSwingRipplesEIG eig) {
                 JSwingRipplesApplication.getInstance().enableProceedButton(true);
+                JSwingRipplesApplication.getLogger().log(currentPhase, "Analysis successful", "N/A");
                 JSwingRipplesApplication.getInstance().refreshViewArea();
                 JSwingRipplesApplication.getInstance().setProceedButtonText("Proceed To Change Propagation");
                 JSwingRipplesApplication.getInstance().setProceedButtonListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         JSwingRipplesApplication.getInstance().enableProceedButton(false);
+                        currentPhase = Phase.CP;
+                        JSwingRipplesApplication.getLogger().log(currentPhase, "Loading propagation...", "N/A");
                         startAnalysisCallback.startAnalysis(
                                 createChangePropagationData(eig), createChangePropagationCallback());
                     }

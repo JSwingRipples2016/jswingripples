@@ -14,6 +14,7 @@ import org.incha.core.jswingripples.JRipplesICModule;
 import org.incha.core.jswingripples.eig.JSwingRipplesEIGNode;
 import org.incha.core.jswingripples.eig.history.CompoundUndoAction;
 import org.incha.core.jswingripples.eig.history.UndoAction;
+import org.incha.ui.JSwingRipplesApplication;
 import org.incha.ui.jripples.EIGStatusMarks;
 
 class ICAction extends AbstractAction {
@@ -82,6 +83,9 @@ class ICAction extends AbstractAction {
 
             try {
                 if (toNode == null) {
+                    JSwingRipplesApplication.getLogger().log(
+                            StartAnalysisDialog.getCurrentPhase(),
+                            String.format("set as \"%s\"", rule), fromNode.toString());
                     module.ApplyRuleAtNode(rule, fromNode, granularity);
                 } else if (toNode != null) {
                     module.ApplyRuleAtNode(rule, fromNode, toNode);
