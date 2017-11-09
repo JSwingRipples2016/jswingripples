@@ -7,8 +7,11 @@ import org.incha.ui.texteditor.TextEditor;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 
 /**
@@ -23,6 +26,11 @@ public class FileOpen {
     private boolean changed = false;
     private FileOpenDocListener doclistener; 
 
+    public static class FileOpenFactory {
+        public FileOpen create(String absolutePath) {
+            return new FileOpen(absolutePath);
+        }
+    }
     /**
      * Constructor to the FileOpen.
      * @param absolutePath Path of the file.
@@ -184,7 +192,7 @@ public class FileOpen {
     	text.getDocument().removeDocumentListener(doclistener);
     }    
     
-    private class FileOpenDocListener implements DocumentListener{
+    private class FileOpenDocListener implements DocumentListener {
 
 		@Override
 		public void insertUpdate(DocumentEvent e) {

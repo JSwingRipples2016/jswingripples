@@ -1,23 +1,27 @@
 package org.incha.ui.texteditor;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Toolkit;
-import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.swing.*;
-
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.incha.core.texteditor.FileOpen;
 import org.incha.ui.JSwingRipplesApplication;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TextEditor extends JFrame {
 
     private ArrayList<FileOpen> openFiles;
     private static TextEditor instance;
+    private FileOpen.FileOpenFactory fileOpenFactory;
+    private TextEditorElementsFactory textEditorElementsFactory;
     private JTabbedPane jTabbedPane;
 
     private JMenu fileMenu = new JMenu( "File" );
@@ -26,6 +30,12 @@ public class TextEditor extends JFrame {
     private JMenuBar menubar = new JMenuBar();
 
     private Map<String,String> extensionMap = new HashMap<String,String>();
+
+    public static class TextEditorElementsFactory {
+        public JTabbedPane createJTabbedPane() {
+            return new JTabbedPane();
+        }
+    }
 
     /**
      * Set up the menus in the TextEditor.
@@ -44,7 +54,7 @@ public class TextEditor extends JFrame {
         extensionMap.put( "SQL", SyntaxConstants.SYNTAX_STYLE_SQL );
         extensionMap.put( "XML", SyntaxConstants.SYNTAX_STYLE_XML );
         //add a tab pane to the window.
-        jTabbedPane = new JTabbedPane();
+        jTabbedPane = textEditorElementsFactory.createJTabbedPane();
         //add a click listener to the tab pane, and intersect the mouse location with the tab pane.
         addJTabbedPaneMouseListener(jTabbedPane);
 
@@ -107,11 +117,18 @@ public class TextEditor extends JFrame {
     /**
      * Constructor.
      * @param jSwingRipplesApplication in case to be necessary.
+     * @param fileOpenFactory
+     * @param textEditorElementsFactory
      */
-    public TextEditor (JSwingRipplesApplication jSwingRipplesApplication){
+    public TextEditor(JSwingRipplesApplication jSwingRipplesApplication,
+                      FileOpen.FileOpenFactory fileOpenFactory,
+                      TextEditorElementsFactory textEditorElementsFactory){
         super( "Text Editor" );
 
         instance = this;
+        this.fileOpenFactory = fileOpenFactory;
+        this.textEditorElementsFactory = textEditorElementsFactory;
+
         setUpJMenuBar();
         getContentPane().add( jTabbedPane );
 
@@ -153,42 +170,57 @@ public class TextEditor extends JFrame {
         });
     }
 
+    public void bringToFront() {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                setVisible(true);
+                setExtendedState(JFrame.NORMAL);
+            }
+        });
+    }
+
+    private void addTab(final FileOpen fileOpen) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                JScrollPane jScrollPane = new JScrollPane(fileOpen.getText());
+                jTabbedPane.addTab(fileOpen.getFileName(), jScrollPane);
+            }
+        });
+    }
+
+    private void setSelectedIndex(final int index) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                jTabbedPane.setSelectedIndex(index);
+            }
+        });
+    }
+
     /**
      * open a File in the Text Editor and add a new Tab to the window with
      * the file.
      * @param filename String with the path of the File.
      */
     public void openFile ( String filename ) {
+        FileOpen fileToOpen = null;
         //search if the File isn't open.
         for(FileOpen file: openFiles){
             //if found the file open, select this tab.
             if ( file.getPath().equals(filename)){
-                jTabbedPane.setSelectedIndex(openFiles.indexOf(file));
-
-                return;
+                fileToOpen = file;
+            }
+        };
+        if (fileToOpen == null) {
+            fileToOpen = fileOpenFactory.create(filename);
+            if (fileToOpen.open()) {
+                openFiles.add(fileToOpen);
+                addTab(fileToOpen);
             }
         }
-        FileOpen newFile = new FileOpen(filename);
-        if (newFile.open()) {
-            openFiles.add(newFile);
-            JScrollPane jScrollPane = new JScrollPane(newFile.getText());
-            jTabbedPane.addTab(newFile.getFileName(), jScrollPane);
-        }
-
-        /**
-         * if need a limit to the files open for any reason use this.
-         if(openFiles.size()<15) {
-         FileOpen newFile = new FileOpen(filename);
-         if (newFile.open()) {
-         openFiles.add(newFile);
-         JScrollPane jScrollPane = new JScrollPane(newFile.getText());
-         jTabbedPane.addTab(newFile.getFileName(), jScrollPane);
-         }
-         }
-         else{
-
-         }**/
-
+        setSelectedIndex(openFiles.indexOf(fileToOpen));
     }
 
     private void addJTabbedPaneMouseListener(final JTabbedPane pane){
@@ -222,7 +254,8 @@ public class TextEditor extends JFrame {
      */
     public static TextEditor getInstance(){
         if(instance==null){
-            instance=new TextEditor(JSwingRipplesApplication.getInstance());
+            instance=new TextEditor(JSwingRipplesApplication.getInstance(),
+                    new FileOpen.FileOpenFactory(), new TextEditorElementsFactory());
         }
         return instance;
     }
