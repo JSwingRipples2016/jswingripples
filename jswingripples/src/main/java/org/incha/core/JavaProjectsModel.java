@@ -1,5 +1,9 @@
 package org.incha.core;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.incha.ui.JSwingRipplesApplication;
+
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.BufferedReader;
@@ -10,10 +14,6 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.incha.ui.JSwingRipplesApplication;
 
 /**
  * Stores information about the Java Projects and methods for their listeners.
@@ -42,20 +42,29 @@ public class JavaProjectsModel {
         super();
     }
 
+    private boolean projectWithSameNameExists(String projectName) {
+        return getProjectByName(projectName) != null;
+    }
+
+    private void changeProjectNameToNonExistent(JavaProject project) {
+        String projectName = project.getName();
+        while (projectWithSameNameExists(projectName)) {
+            projectName += "_new";
+        }
+        project.setProjectName(projectName);
+    }
 
     /**
-     * @param prg new project.
+     * @param project new project.
      */
-    public boolean addProject(final JavaProject prg) {
-        final JavaProject equals = getProjectByName(prg.getName());
-        if (equals == null) {
-            final List<JavaProject> old = new ArrayList<>(projects);
-            projects.add(prg);
-            firePropertyChange(PROJECTS, old, projects);
-            return true;
+    public void addProject(final JavaProject project) {
+        if (projectWithSameNameExists(project.getName())) {
+            changeProjectNameToNonExistent(project);
         }
 
-        return false;
+        final List<JavaProject> old = new ArrayList<>(projects);
+        projects.add(project);
+        firePropertyChange(PROJECTS, old, projects);
     }
     /**
      * @param project project to delete.
@@ -117,6 +126,16 @@ public class JavaProjectsModel {
             }
         }
         return null;
+    }
+
+    public void renameProject(String oldName, String newName) {
+        JavaProject project = getProjectByName(oldName);
+        if (project == null) {
+            throw new AssertionError("The project " + oldName + " should exist, otherwise it can't have been renamed.");
+        }
+        deleteProject(project);
+        project.setProjectName(newName);
+        addProject(project);
     }
     /**
      * @return

@@ -1,36 +1,39 @@
 package org.incha.ui;
 
-import java.awt.BorderLayout;
+import org.incha.core.JavaProject;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.Dialog.ModalityType;
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.*;
-
-import org.incha.core.JavaProject;
-
 public class NewProjectWizard extends JPanel {
     private static final long serialVersionUID = 1738212977882284711L;
+    private boolean projectCreationApproved;
 
     /**
      * New java project.
      */
-    private JTextField projectName = new JTextField(20);
+    private JTextField projectNameField;
     private CompleteListener listener;
     private JavaProject project;
 
     /**
      * Default constructor.
+     * @param project
      */
-    public NewProjectWizard() {
+    public NewProjectWizard(final JavaProject project) {
         super(new BorderLayout());
+        this.projectCreationApproved = false;
+        this.project = project;
+        this.projectNameField = new JTextField(project.getName(), 20);
 
         //center panel
         final JPanel center = new JPanel(new FlowLayout(FlowLayout.CENTER));
         final JLabel jLabel = new JLabel("Project Name: ",JLabel.LEFT);
         center.add(jLabel,BorderLayout.WEST);
-        center.add(projectName,BorderLayout.EAST);
+        center.add(projectNameField, BorderLayout.EAST);
 
         add(center, BorderLayout.CENTER);
 
@@ -41,9 +44,10 @@ public class NewProjectWizard extends JPanel {
         ok.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(final ActionEvent e) {
-                final String text = projectName.getText();
+                final String text = projectNameField.getText();
                 if (text != null && text.trim().length() > 0) {
-                    project = new JavaProject(text);
+                    NewProjectWizard.this.project.setProjectName(text);
+                    projectCreationApproved = true;
                     handleCompleted();
                 }
             }
@@ -55,7 +59,7 @@ public class NewProjectWizard extends JPanel {
         cancel.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(final ActionEvent e) {
-                project = null;
+                NewProjectWizard.this.project = null;
                 handleCompleted();
             }
         });
@@ -82,16 +86,16 @@ public class NewProjectWizard extends JPanel {
      * @return the project
      */
     public JavaProject getProject() {
-        return project;
+        return projectCreationApproved ? project : null;
     }
 
     /**
      * @return java project.
      */
-    public static JavaProject showDialog(final JFrame owner) {
+    public static JavaProject showDialog(final JFrame owner, final JavaProject project) {
         final JDialog dialog = new JDialog(owner, "Please enter project name", ModalityType.APPLICATION_MODAL);
 
-        final NewProjectWizard wizard = new NewProjectWizard();
+        final NewProjectWizard wizard = new NewProjectWizard(project);
         wizard.setListener(new CompleteListener() {
             @Override
             public void hasCompleted(final Object obj) {

@@ -13,7 +13,7 @@ public class JavaProject {
     /**
      * Project name.
      */
-    private final String name;
+    private String name;
     
     /**
      * The list of class path.
@@ -36,10 +36,11 @@ public class JavaProject {
     private Statistics currentStatistics;
     private ModuleConfiguration moduleConfiguration = new ModuleConfiguration();
 
-    /**
-     * @param name the project name.
-     */
-    public JavaProject(final String name) {
+    public JavaProject() {
+        super();
+    }
+
+    public JavaProject(String name) {
         super();
         this.name = name;
     }
@@ -116,5 +117,9 @@ public class JavaProject {
      */
     public GitHubRepo getGHRepo() {
             return repo;
+    }
+
+    public void setProjectName(String projectName) {
+        this.name = projectName;
     }
 }

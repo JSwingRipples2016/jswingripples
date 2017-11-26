@@ -1,16 +1,19 @@
 package org.incha.ui;
 
 
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.incha.core.JavaProject;
+import org.incha.utils.ProjectNamingUtils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
-
-import org.eclipse.jgit.api.Git;
 
 
 class GitSettings extends JPanel {
@@ -22,10 +25,12 @@ class GitSettings extends JPanel {
     private final SourcesEditor sourcesEditor;
     private final JFrame principalFrame;
     private JavaProject project;
+    private SourceLoadingListener sourceLoadingListener;
 
     @SuppressWarnings("deprecated")
-    GitSettings(JavaProject project){
-    	this.project = project;
+    GitSettings(SourceLoadingListener sourceLoadingListener){
+    	this.project = new JavaProject();
+    	this.sourceLoadingListener = sourceLoadingListener;
         final ThreadHolder downloadThreadHolder = new ThreadHolder();
         sourcesEditor = new SourcesEditor(project);
 
@@ -124,6 +129,9 @@ class GitSettings extends JPanel {
                             .setURI(remoteUrl)
                             .setDirectory(fileForRepository)
                             .call();
+                    String gitProjectName = ProjectNamingUtils.getGitProjectNameFromUrl(remoteUrl);
+                    project.setProjectName(gitProjectName);
+                    sourceLoadingListener.onSourcesLoaded(project);
                 } catch (org.eclipse.jgit.api.errors.TransportException e) {
                     JOptionPane.showMessageDialog(principalFrame, "Connection error, please check internet.",
                             "Inane error", JOptionPane.ERROR_MESSAGE);

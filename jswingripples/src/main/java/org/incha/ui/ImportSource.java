@@ -9,12 +9,13 @@ public class ImportSource extends SourcesEditor {
 
 	private static final long serialVersionUID = -9129106022897886891L;
 
-	/**
-     * @param project the java project.
-     */
-    public ImportSource(JavaProject project) {
-        super(project);
+    public ImportSource() {
+        super(new JavaProject());
         this.addFile();
+    }
+
+    public JavaProject getProject() {
+        return project;
     }
 
 }

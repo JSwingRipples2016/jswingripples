@@ -1,13 +1,13 @@
 package org.incha.ui;
 
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-
 import org.incha.core.JavaProject;
+import org.incha.core.JavaProjectsModel;
+import org.incha.ui.jripples.JRipplesResources;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class ProjectSettingsEditor extends JTabbedPane {
     
@@ -35,10 +35,30 @@ public class ProjectSettingsEditor extends JTabbedPane {
      */
     private JPanel createProjectSettingsTab() {
         final JPanel root = new JPanel(new FlowLayout(FlowLayout.LEADING));
-        final JPanel panel = new JPanel(new GridLayout(2, 1));
-        //project name
-        panel.add(new JLabel("Name: " + project.getName()));
+        FlowLayout layout = new FlowLayout();
+        final JPanel panel = new JPanel(layout);
+        panel.add(new JLabel("Name: "));
+        panel.add(new JLabel(project.getName()));
+        ImageIcon icon = new ImageIcon(JRipplesResources.getImage("icons/edit.gif"));
+        JLabel editLabel = new JLabel(icon);
+        panel.add(editLabel);
         root.add(panel);
+
+        editLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                String newProjectName = JOptionPane.showInputDialog(
+                        "New project name", project.getName());
+                if (newProjectName != null) {
+                    JavaProjectsModel.getInstance()
+                            .renameProject(project.getName(), newProjectName);
+                    panel.remove(1);
+                    panel.add(new JLabel(project.getName()), 1);
+                    panel.revalidate();
+                    panel.repaint();
+                }
+            }
+        });
         return root;
     }
     

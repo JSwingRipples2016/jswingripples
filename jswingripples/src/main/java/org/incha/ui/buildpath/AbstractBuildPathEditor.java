@@ -1,28 +1,20 @@
 package org.incha.ui.buildpath;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
+import org.incha.core.JavaProject;
+import org.incha.utils.CollectionUtils;
+
+import javax.swing.*;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.TableCellRenderer;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.util.List;
-
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.TableCellRenderer;
-
-import org.incha.core.JavaProject;
-import org.incha.utils.CollectionUtils;
 
 public abstract class AbstractBuildPathEditor extends JPanel {
     protected final JavaProject project;
@@ -156,6 +148,7 @@ public abstract class AbstractBuildPathEditor extends JPanel {
             final File f = chooser.getSelectedFile();
             if (f != null) {
                 addFileToProject(f);
+                project.setProjectName(f.getName());
             }
         }
     }

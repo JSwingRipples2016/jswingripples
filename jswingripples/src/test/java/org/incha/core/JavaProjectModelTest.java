@@ -1,10 +1,10 @@
 package org.incha.core;
 
+import junit.framework.TestCase;
+
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.List;
-
-import junit.framework.TestCase;
 
 public class JavaProjectModelTest extends TestCase implements PropertyChangeListener {
     /**
@@ -56,12 +56,13 @@ public class JavaProjectModelTest extends TestCase implements PropertyChangeList
 
         //clear property change event
         propertyChangeEvent = null;
-        //check can't add duplicate
+        //check that the project was added and its name was changed to <proj_name>_new
         model.addProject(p);
 
-        assertEquals(1, model.getProjects().size());
-        assertNull(propertyChangeEvent);
+        assertEquals(2, model.getProjects().size());
+        assertEquals("prgname_new", model.getProjects().get(0).getName());
     }
+
     public void testDeleteSource() {
         final JavaProject f1 = new JavaProject("name1");
         final JavaProject f2 = new JavaProject("name2");
@@ -90,6 +91,30 @@ public class JavaProjectModelTest extends TestCase implements PropertyChangeList
 
         assertEquals(1, model.getProjects().size());
         assertNull(propertyChangeEvent);
+    }
+
+    public void testRenameProject() {
+        /* given*/
+        final JavaProject p = new JavaProject("proj");
+        model.addProject(p);
+
+        /* when */
+        model.renameProject("proj", "project");
+
+        /* then */
+        assertEquals("project", model.getProjects().get(0).getName());
+    }
+
+    public void testRenameProjectToTheNameWhichAnotherProjectAlreadyHas() {
+        /* given*/
+        model.addProject(new JavaProject("project"));
+        model.addProject(new JavaProject("proj"));
+
+        /* when */
+        model.renameProject("proj", "project");
+
+        /* then */
+        assertEquals("project_new", model.getProjects().get(1).getName());
     }
 
     /* (non-Javadoc)

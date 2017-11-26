@@ -10,13 +10,16 @@ import org.incha.ui.stats.StartAnalysisAction;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class JSwingRipplesApplication extends JFrame {
+public class JSwingRipplesApplication extends JFrame implements SourceLoadingListener {
     private static final long serialVersionUID = 6142679404175274529L;
     private JTabbedPane viewArea;
     private JButton proceedButton;
@@ -55,7 +58,7 @@ public class JSwingRipplesApplication extends JFrame {
         if (path[path.length -1] instanceof JavaProject) {
             final JavaProject project = (JavaProject) path[path.length -1];
             final JPopupMenu menu = new JPopupMenu();
-            
+
             //delete project menu item
             final JMenuItem delete = new JMenuItem("Delete Project");
             delete.addActionListener(new ActionListener() {
@@ -80,7 +83,7 @@ public class JSwingRipplesApplication extends JFrame {
             final JMenuItem startAnalysis = new JMenuItem("Start analysis");
             startAnalysis.addActionListener(new StartAnalysisAction(project.getName()));
             menu.add(startAnalysis);
-            
+
             //project preferences menu item
             final JMenuItem showIssues = new JMenuItem("Show Issues");
             showIssues.addActionListener(new ActionListener() {
@@ -97,7 +100,7 @@ public class JSwingRipplesApplication extends JFrame {
             menu.show(projectsView, e.getX(), e.getY());
         }
     }
-    
+
     /**
      * @param project
      */
@@ -134,23 +137,28 @@ public class JSwingRipplesApplication extends JFrame {
      * Import a project from a path.
      */
     protected void importProject(){
-        final JavaProject project = NewProjectWizard.showDialog(this);
-        if (project != null) {
-            if(JavaProjectsModel.getInstance().addProject(project)) {
-                new ImportSource(project);
-            }
+        JavaProject project = new ImportSource().getProject();
+        if (projectSourcesWereLoaded(project)) {
+            onSourcesLoaded(project);
         }
     }
 
-    /**
+    private boolean projectSourcesWereLoaded(JavaProject project) {
+        return !project.getBuildPath().getSources().isEmpty();
+    }
+
+    /**ImportSource(project);
      * Import project from a url in github
      */
     protected void importProjectGithub(){
-        final JavaProject project = NewProjectWizard.showDialog(this);
+        new GitSettings(this);
+    }
+
+    @Override
+    public void onSourcesLoaded(JavaProject project) {
+        project = NewProjectWizard.showDialog(this, project);
         if (project != null) {
-            if(JavaProjectsModel.getInstance().addProject(project)) {
-                new GitSettings(project);
-            }
+            JavaProjectsModel.getInstance().addProject(project);
         }
     }
 
