@@ -1,18 +1,18 @@
 package org.incha.ui.stats;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.File;
-import java.util.List;
-
-import javax.swing.SwingUtilities;
-
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IMember;
+import org.eclipse.jdt.core.ISourceRange;
+import org.eclipse.jdt.core.JavaModelException;
 import org.incha.core.JavaProject;
 import org.incha.core.jswingripples.eig.JSwingRipplesEIGNode;
-import org.incha.ui.JSwingRipplesApplication;
 import org.incha.ui.classview.ClassTreeView;
 import org.incha.ui.texteditor.TextEditor;
+
+import javax.swing.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.List;
 
 public class HierarchicalView extends ClassTreeView {
     private static final long serialVersionUID = -725916023414871313L;
@@ -34,12 +34,21 @@ public class HierarchicalView extends ClassTreeView {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     showPopupMenu(e.getX(), e.getY());
                 } else if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
-                	final ICompilationUnit unit = getSelectedItem(e.getX(), e.getY()).getNodeIMember().getCompilationUnit();
-                	final File fileToOpen = new File(unit.getPath().toString());
+                    JSwingRipplesEIGNode selectedItem = getSelectedItem(e.getX(), e.getY());
+                    IMember selectedNodeIMember = selectedItem.getNodeIMember();
+                    ISourceRange selectedNodeSourceRange;
+                    try {
+                        selectedNodeSourceRange = selectedNodeIMember.getSourceRange();
+                    } catch (JavaModelException e1) {
+                        throw new RuntimeException(e1);
+                    }
+                    final ICompilationUnit unit = selectedNodeIMember.getCompilationUnit();
+                	String fileToOpen = unit.getPath().toString();
                 	try {
 						TextEditor textEditor = TextEditor.getInstance();
-                        textEditor.openFile(unit.getPath().toString());
-					} catch (Exception e1) {
+						textEditor.bringToFront();
+                        textEditor.openFile(fileToOpen, selectedNodeSourceRange);
+                    } catch (Exception e1) {
 						e1.printStackTrace();
 					}
                 }
